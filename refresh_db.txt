@@ -1,0 +1,515 @@
+#!/bin/sh
+#Adam Bowen - 2015
+#refresh.sh
+#Thanks to Linerd @ http://tuxtweaks.com/2014/05/bash-getopts for the great getops examples.
+#####################################################################
+##Stock Variables
+VERSION=2.3.0
+DESCRIPTION="This script executes the refresh hook from the linuxsource for the SugarCRM user case."
+CONTENTDIR=/u02/app/content
+APPDIR=/u02/app
+HOMEDIR=/home/delphix
+MD5FILE=${CONTENTDIR}/Content.md5
+FETCH_ONLY=N
+SCRIPT=`basename ${BASH_SOURCE[0]}`
+RELEASE=VOLTRON
+BUCKETPATH="landshark/Modules/${RELEASE}/${SCRIPT}"
+S3_BASE="https://s3-us-west-2.amazonaws.com/$BUCKETPATH"
+AWSCLI_BASE="s3://$BUCKETPATH"
+IPADDR=$(/sbin/ifconfig eth0 2>/dev/null|awk '/inet addr:/ {print $2}'|sed 's/addr://')
+BASEDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+TEMPFILES=("${SCRIPT}" "example_file")
+EXCLUDES=(--exclude \"example_file_name\" --exclude \"*example_dir_name/*\")
+
+NORM=`tput sgr0`
+BOLD=`tput bold`
+REV=`tput smso`
+ALERT=`tput setab 1 setaf 0`
+#####################################################################
+##Custom Variables
+SOURCEDBNAME="SugarCRM DB"
+TARGETDBNAME="SugarCRM DB Secure Master"
+
+#####################################################################
+##Stock functions and checks
+#This script should only be run as root (sudo)
+#if [[ $EUID -ne 0 ]]; then
+#   echo "${ALERT}This script must be run as root${NORM}" 1>&2
+#   exit 1
+#fi
+
+[[ -f ${HOMEDIR}/.ls/config ]] && source ${HOMEDIR}/.ls/config
+
+function HELP {
+	#Tailor this for your script
+	echo -e \\n"Help documentation for ${BOLD}${SCRIPT}.${NORM}"\\n
+	echo -e "${REV}Basic usage:${NORM} ${BOLD}$SCRIPT${NORM}"\\n
+	echo "Command line switches are optional. The following switches are recognized."
+	echo "${REV}-e${NORM}  --Sets the value for the ${BOLD}delphix engine ip address${NORM}."
+	echo "${REV}-u${NORM}  --Sets the value for the ${BOLD}delphix engine username${NORM}. Default is ${BOLD}delphix_admin${NORM}."
+	echo "${REV}-p${NORM}  --Sets the value for the ${BOLD}delphix engine password${NORM}. Default is ${BOLD}landshark${NORM}."
+	echo -e "${REV}-k${NORM}  --The script will ${BOLD}keep${NORM} the setup files when complete. Accepts Y ior N value."
+	echo -e "${REV}-f${NORM}  --The script will ${BOLD}only fetch${NORM} the setup files and then exit. Accepts Y ior N value. \
+		Default value is N. (-f Y implies -k Y)"
+	echo -e "${REV}-r${NORM}  --The script will ${BOLD}refresh${NORM} the environments in Delphix when complete. Accepts Y ior N value. 
+		This parameter only applies to the linuxtarget"
+	echo -e "${REV}-s${NORM}  --The script will ${BOLD}shrink${NORM} the Virtual Machine when complete. Accepts Y ior N value."
+	echo -e "${REV}-h${NORM}  --Displays this ${BOLD}help${NORM} message. No further functions are performed."
+	echo -e "${REV}-u${NORM}  --The script will automatically install any related/required content/${BOLD}updates${NORM}.Accepts Y ior N value."
+	echo -e "${REV}-v${NORM}  --Displays the ${BOLD}version${NORM} of ${SCRIPT}. No further functions are performed."
+	echo -e "Example: ${BOLD}$SCRIPT -e 192.168.2.46 -u delphix_admin -p landshark ${NORM}"\\n
+	exit 1
+}
+
+function LSEVAL {
+	#Check the version of Landshark on this machine. Prompt for upgrade, if necessary
+	if [[ "$HOSTNAME" != "linuxsource.delphix.local" ]] && [[ "$HOSTNAME" != "linuxtarget.delphix.local" ]]; then
+		echo "This is not a landshark system. Exiting."
+		exit 1
+	fi
+
+	local IFS=' '
+	read -a LSRELEASE <<< "`cat /etc/landshark-release 2> /dev/null`"
+
+	local IFS='.'
+	read -a LSVERSION <<< "${LSRELEASE[2]}"
+
+	if [[ "${LSRELEASE[0]}" == "Landshark" ]] && [[ "${LSRELEASE[1]}" == "Prime" ]] && [[ ${LSVERSION[0]} -ge 2 ]] && [[ ${LSVERSION[1]} -ge 3 ]]; then
+		echo "This system is running `cat /etc/landshark-release`" 
+		echo "This content is compatible with this version of Landshark Prime"
+	else
+		if [[ "${LSRELEASE[1]}" != "Prime" ]]; then 
+			echo "${SCRIPT} is only compatible with Landshark Prime"
+			exit 2
+		elif [[ ${LSVERSION[0]} -ge 2 ]] && [[ ${LSVERSION[1]} -ge 0 ]]; then
+			if [[ ${LSVERSION[1]} -eq 0 ]] && [[ ! ${LSVERSION[2]} -ge 5 ]]; then 
+				echo "${VERSION} is incompatible"
+				exit 2
+			fi
+	    	echo "${ALERT}It appears that this system hasn't been upgraded to prime_2.3${NORM}"
+	    	until  [[ "$UPGRADE" == "Y" ]] || [[ "$UPGRADE" == "N" ]]; do
+	    		read -p "Do you want to apply prime_2.3 now? (Y/N): " UPGRADE
+	    		UPGRADE=${UPGRADE^^}
+	    	done
+		    if [[ "$UPGRADE" == "Y" ]]; then
+		    	echo "Proceeding with Prime upgrade"
+		    	DMIP=$DMIP DMPORT=$DMPORT su delphix -c "${CONTENTDIR}/landshark_fetch -m ${RELEASE} prime_latest -e $DEIP -u $DEUSERNAME -p $DEPASSWORD \
+		    		-r N -s N -k $KEEP -U Y"
+		    	result=$?
+		    	if [[ $result -ne 0 ]]; then
+		    		echo "The update did not complete successfully. Exiting ${SCRIPT}"
+		    		exit 1
+		    	fi
+		    else
+		    	echo "prime_2.3 and Delphix 4.3+ is a prerequisite for this content."
+		    	echo "Satisfy the requirements and try again."
+		    	exit 2
+	    	fi
+	    #fix this
+	    elif [[ ! ${LSVERSION[0]} -ge 2 ]] && [[ ! ${LSVERSION[1]} -ge 0 ]] && [[ ! ${LSVERSION[2]} -ge 5 ]]; then
+			echo "Only Landshark Prime 2.0.5 or higher is supported"
+			exit 1
+    	else
+    		echo "Unable to determine version of this Landshark System. Exiting"
+    		exit 1
+    	fi
+	fi
+}
+
+function FETCH_S3CURL {
+	#For items that have to be fetched on an individual basis.
+	DIRECTORY=`echo $1| sed -e 's|\(.*\)\(/\)\(.*\)|\1\2|'`
+	FILE=`echo $1 | sed -e 's|\(.*\)\(/\)\(.*\)|\3|'`
+	#echo $DIRECTORY
+	#echo $FILE
+	cd ${DIRECTORY}
+	if [[ -f ${1} ]] && grep ${FILE} ${MD5FILE} | md5sum -c --quiet; then
+		echo "${1} already present and validated."
+		echo "Skipping download."
+	else
+		echo "Fetching ${FILE}"
+		echo "su delphix -c \"${CONTENTDIR}/s3curl.pl --id=landshark -- -L -o ${1} -O ${S3_BASE}/${FILE}\""
+		su delphix -c "${CONTENTDIR}/s3curl.pl --id=landshark -- -L -o ${1} -O ${S3_BASE}/${FILE}" || { echo "Unable to download content. Please consult /tmp/${SCRIPT}.log and try again."; exit 1; }
+	fi
+	cd - &> /dev/null
+}
+
+function FETCH_AWSCLI {
+	#For fetching large or multiple items
+	echo "Fetching ${SCRIPT} content"
+	FETCH_DIR="aws s3 sync ${AWSCLI_BASE} ${CONTENTDIR} --exclude \"*.git/*\" --exclude \"*lt/*\" --exclude \"*ls/*\" --exclude \"*wt/*\" \
+		--exclude \"*ws/*\" ${EXCLUDES[@]}"
+	#echo $FETCH_DIR
+	su - delphix -c "$FETCH_DIR" || { echo "Unable to download content. Please consult /tmp/${SCRIPT}.log and try again."; exit 1; }
+	if 	[[ "$HOSTNAME" == "linuxtarget.delphix.local" ]]; then
+		FETCH_DIR="aws s3 sync ${AWSCLI_BASE}/lt ${CONTENTDIR} --exclude \"*.git/*\" ${EXCLUDES[@]}"
+	elif [[ "$HOSTNAME" == "linuxsource.delphix.local" ]]; then
+		FETCH_DIR="aws s3 sync ${AWSCLI_BASE}/ls ${CONTENTDIR} --exclude \"*.git/*\" ${EXCLUDES[@]}"
+	elif [[ "$HOSTNAME" == "windowstarget.delphix.local" ]]; then
+		FETCH_DIR="aws s3 sync ${AWSCLI_BASE}/wt ${CONTENTDIR} --exclude \"*.git/*\" ${EXCLUDES[@]}"
+	elif [[ "$HOSTNAME" == "windowssource.delphix.local" ]];then
+		FETCH_DIR="aws s3 sync ${AWSCLI_BASE}/ws ${CONTENTDIR} --exclude \"*.git/*\" ${EXCLUDES[@]}"
+	fi
+	su - delphix -c "$FETCH_DIR" || { echo "Unable to download content. Please consult /tmp/${SCRIPT}.log and try again."; exit 1; }
+}
+
+function REPLACE_APP_LINK {
+	#This function deletes the object out of the application directory and replaces it with a symlink to the object in the CONTENTDIR
+	#Current style guide is to move files out of the delphix application dir as they are replaced.
+	if [[ -L ${APPDIR}/${1} ]]; then
+		echo "${1} link present"
+	elif [[ -f ${APPDIR}/${1} ]]; then
+		echo "Removing ${APPDIR}/${1} and replacing with symlink to ${CONTENTDIR}/${1}"
+		rm ${APPDIR}/${1}
+		su delphix -c "ln -s ${CONTENTDIR}/${1} ${APPDIR}/${1}"
+	else
+		echo "Creating ${1} link"
+		su delphix -c "ln -s ${CONTENTDIR}/${1} ${APPDIR}/${1}"
+	fi
+}
+
+function REPLACE_HOME_LINK {
+	#This function deletes the object out of the delphix home directory and replaces it with a symlink to the object in the CONTENTDIR
+	#Current style guide is to move files out of the delphix homedir as they are replaced.
+	if [[ -L ${HOMEDIR}/${1} ]]; then
+		echo "${1} link present"
+	elif [[ -f ${HOMEDIR}/${1} ]]; then
+		echo "Removing ${HOMEDIR}/${1} and replacing with symlink to ${CONTENTDIR}/${1}"
+		rm ${HOMEDIR}/${1}
+		su delphix -c "ln -s ${CONTENTDIR}/${1} ${HOMEDIR}/${1}"
+	else
+		echo "Creating ${1} link"
+		su delphix -c "ln -s ${CONTENTDIR}/${1} ${HOMEDIR}/${1}"
+	fi
+}
+
+function FETCH_ENGINE_PARAMS {
+	#this function will prompt the user for unassigned engine parameters
+	until ipcalc -c $DEIP &> /dev/null; do
+		read -p "Enter the Delphix Engine IP address: " DEIP
+	done
+	[[ -z $DEUSERNAME ]] && read -p "Enter the Delphix Engine Admin username: (delphix_admin)" DEUSERNAME
+	DEUSERNAME=${DEUSERNAME:-delphix_admin}
+	[[ -z $DEPASSWORD  ]] && read -p "Enter the Delphix Engine Admin password: (landshark)" DEPASSWORD
+	DEPASSWORD=${DEPASSWORD:-landshark}
+	echo "Delphix Engine = $DEIP"
+	echo "Delphix Engine Username = $DEUSERNAME"
+	echo "Delphix Engine password received"
+}
+
+function FETCH_MASKING_PARAMS {
+	#this function will prompt the user for unassigned engine parameters
+	#The default value for the masking engie is the linuxtarget's ip address
+	if [[ "$HOSTNAME" == "linuxtarget.delphix.local" ]]; then
+		until ipcalc -c $DMIP &> /dev/null; do
+			read -p "What will be the IP address of your Agile Masking Engine?: (${IPADDR})" DMIP
+			DMIP=${DMIP:-$IPADDR}
+		done
+	else
+		until ipcalc -c $DMIP &> /dev/null; do
+			read -p "What will be the IP address of your Agile Masking Engine?: (${LTIPADDR})" DMIP
+			DMIP=${DMIP:-$LTIPADDR}
+		done
+	fi
+	until echo $DMPORT | grep -E "^([0-9]{4}|[0-9]{5})$" &> /dev/null; do
+		read -p "What port will Agile Masking run on?: (8282)" DMPORT
+		DMPORT=${DMPORT:-8282}
+	done
+	[[ -z $DMUSERNAME ]] && read -p "Enter the Masking Engine Admin username: (AxisTech)" DMUSERNAME
+	DMUSERNAME=${DMUSERNAME:-AxisTech}
+	[[ -z $DMPASSWORD ]] && read -p "Enter the Masking Engine Admin password: (Axis_123)" DMPASSWORD
+	DMPASSWORD=${DMPASSWORD:-AxiS_123}
+	echo "Masking Engine = $DMIP"
+	echo "Masking Port = $DMPORT"
+	echo "Masking Engine Username = $DMUSERNAME"
+	echo "Masking Engine password received"
+}
+
+function FETCH_VM_PARAMS {
+	#prompts the user for the other Linux VM IP
+	#Will add Windows support later
+	if [[ "$HOSTNAME" == "linuxtarget.delphix.local" ]]; then
+		until ipcalc -c $LSIPADDR &> /dev/null; do
+			read -p "Enter the linuxsource ip address: " LSIPADDR
+		done
+		until ipcalc -c $WSIPADDR &> /dev/null; do
+				read -p "Enter the windowssource ip address: " WSIPADDR
+		done
+		until ipcalc -c $WTIPADDR &> /dev/null; do
+				read -p "Enter the windowstarget ip address: " WTIPADDR
+		done
+	else
+		until ipcalc -c $LTIPADDR &> /dev/null; do
+			read -p "Enter the linuxtarget ip address: " LTIPADDR
+		done
+	fi
+	if [[ "LATER" == True ]]; then
+		if [[ "$HOSTNAME" == "windowstarget.delphix.local" ]]; then
+			until ipcalc -c $WSIPADDR &> /dev/null; do
+				read -p "Enter the windowssource ip address: " WSIPADDR
+			done
+		else
+			until ipcalc -c $WTIPADDR &> /dev/null; do
+				read -p "Enter the windowstarget ip address: " WTIPADDR
+			done
+		fi
+	fi
+}
+
+function ENGINE_TEST {
+	#runs simple curl calls to attempt to establish as simple login to the Delphix Engine
+	echo "Testing Delphix Engine"
+	echo "Establishing a Session to the Delphix Engine"
+	SESS=$(curl -s -X POST -k --data @- http://${DEIP}/resources/json/delphix/session \
+    -c ~/cookies.txt -H "Content-Type: application/json" <<-EOF
+	{
+	    "type": "APISession",
+	    "version": {
+	        "type": "APIVersion",
+	        "major": 1,
+	        "minor": 6,
+	        "micro": 0
+	    }
+	}
+	EOF
+	)
+
+	if [[ "`echo $SESS |jq '.status'`" == "\"OK\"" ]]; then
+		echo "Delphix Engine Session was created"
+	else
+		echo "Delphix Engine Session was unable to be created"
+		until  [[ "$CONT" == "Y" ]] || [[ "$CONT" == "N" ]]; do
+			read -p "Are you sure you want to continue? (Y/N)" CONT
+			CONT=${CONT^^}
+		done
+		if [[ "$CONT" == "N" ]]; then
+			echo "Please validate your Delphix Engine parameters, and try again."
+			exit 1
+		else
+			return
+		fi
+	fi
+	echo "Authenticating with the Delphix Engine"
+	AUTH=$(curl -s -X POST -k --data @- http://${DEIP}/resources/json/delphix/login \
+	    -b ~/cookies.txt -H "Content-Type: application/json"<<-EOF
+	{
+	    "type": "LoginRequest",
+	    "username": "${DEUSERNAME}",
+	    "password": "${DEPASSWORD}"
+	}
+	EOF
+	 )
+
+	if [[ "`echo $AUTH|jq '.status'`" == "\"OK\"" ]]; then
+		echo "Delphix Engine Authentication was successful"
+	else
+		echo "Delphix Engine Authentication was unsuccessful"
+		until  [[ "$CONT" == "Y" ]] || [[ "$CONT" == "N" ]]; do
+			read -p "Are you sure you want to continue? (Y/N)" CONT
+			CONT=${CONT^^}
+		done
+		if [[ "$CONT" == "N" ]]; then
+			echo "Please validate your Delphix Engine parameters, and try again."
+			exit 1
+		else
+			return
+		fi
+	fi
+	echo "Delphix Engine tests completed successfully"
+}
+
+function SHRINK_RAY {
+	#execute the landshark.shrink function
+	until  [[ "$SHRINK" == "Y" ]] || [[ "$SHRINK" == "N" ]]; do
+		read -p "Do you want to shrink your environments now? (Y/N): " SHRINK
+		SHRINK=${SHRINK^^}
+	done
+	if [[ "$SHRINK" == "Y" ]]; then
+		${CONTENTDIR}/landshark.shrink
+	fi
+}
+
+function REFRESH {
+	if [[ "$HOSTNAME" == "linuxtarget.delphix.local" ]]; then
+		echo "Some content updates may require your environments to be refreshed before they can be utilized."
+		until  [[ "$REFRESH" == "Y" ]] || [[ "$REFRESH" == "N" ]]; do
+			read -p "Do you want to refresh your environments now? (Y/N): " REFRESH
+			REFRESH=${REFRESH^^}
+		done
+		if [[ "$REFRESH" == "Y" ]]; then
+			su delphix -c "${CONTENTDIR}/prime_setup.py -r"
+		fi
+	fi
+}
+
+function CLEAN_UP {
+	#Delete temporary and setup files
+	if [[ "$KEEP" == "N" ]]; then
+		echo "Removing the following files from ${CONTENTDIR}"
+		echo "${TEMPFILES[@]}"
+		cd ${CONTENTDIR}
+		rm -f ${TEMPFILES[@]}
+		cd - &> /dev/null
+	else
+		echo "-k was given. Setup files will remain in ${CONTENTDIR}"
+	fi
+}
+
+function NETWORK_CHECK {
+	#call this function if you need to check that the user is on the Delphix Networ
+	until [[ $ping_result == 0 ]]; do
+		DELPHIX_IP="172.16.101.11"
+		ping -c 1 $DELPHIX_IP
+		ping_result=$?
+		if [[ $ping_result != 0 ]]; then
+			echo "Could not ping ${DELPHIX_IP}"
+			echo -e \\n"${REV}${BOLD}In order to run ${SCRIPT}, you need to be connected to the Delphix Network ${NORM}"\\n
+			echo "Please ensure your host machine is connected to the VPN, or on the corporate network"
+			echo "If you are remote and in the field, ensure that your VM's are setup on"
+			echo "a NAT network so that they can access the VPN network through your host"
+			read -p "Press [Enter] when you have connected to the network (i.e. via VPN)"
+		fi
+	done
+}
+
+function UPDATE_MANIFEST {
+	[[ -f ${CONTENTDIR}/Content.installed ]] &&	sed -i "/${SCRIPT}/d" ${CONTENTDIR}/Content.installed
+	echo -e "${SCRIPT}\t${VERSION}" >> ${CONTENTDIR}/Content.installed
+}
+
+##################################
+##Custom Functions
+
+function GET_DATABASE_REFS {
+	DATABASES=$(curl -X GET -k "http://${DEIP}/resources/json/delphix/database" \
+		-b ~/cookies.txt -H "Content-Type: application/json")
+	TARGETDATABASE=$(echo $DATABASES | jq -r ".result[] | select(.name == \"${TARGETDBNAME}\")")
+	TARGETCONTAINERREF=$(echo $TARGETDATABASE | jq -r '.reference')
+	SOURCEDATABASE=$(echo $DATABASES | jq -r ".result[] | select(.name == \"${SOURCEDBNAME}\")")
+	SOURCECONTAINERREF=$(echo $SOURCEDATABASE | jq -r '.reference')
+	echo "Source Database Reference, Target Database Reference:"
+	echo "${SOURCECONTAINERREF}, ${TARGETCONTAINERREF}"
+}
+
+
+#####################################################################
+##Welcome Message
+echo -e \\n"${BOLD}Welcome to ${SCRIPT}, v${VERSION}${NORM}"
+echo -e \\n"${DESCRIPTION}"
+
+#####################################################################
+##Argument Parser
+while getopts :e:f:k:lr:u:p:s:U:h FLAG; do
+  case $FLAG in
+    k)	KEEP=${OPTARG^^}
+		if [[ "$KEEP" != "Y" ]] && [[ "$KEEP" != "N" ]]; then
+			echo -e "${ALERT}-k only accepts Y or N as parameters${NORM}"
+			HELP
+		fi
+      ;;
+    e)	DEIP=$OPTARG
+      ;;
+  	f)	FETCH_ONLY=${OPTARG^^}
+		if [[ "$FETCH_ONLY" != "Y" ]] && [[ "$FETCH_ONLY" != "N" ]]; then
+			echo -e "${ALERT}-f only accepts Y or N as parameters${NORM}"
+			HELP
+		fi
+      ;;
+	r)	REFRESH=${OPTARG^^}
+		if [[ "$REFRESH" != "Y" ]] && [[ "$REFRESH" != "N" ]]; then
+			echo -e "${ALERT}-r only accepts Y or N as parameters${NORM}"
+			HELP
+		fi
+      ;;
+    s)	SHRINK=${OPTARG^^}
+		if [[ "$SHRINK" != "Y" ]] && [[ "$SHRINK" != "N" ]]; then
+			echo -e "${ALERT}-s only accepts Y or N as parameters${NORM}"
+			HELP
+		fi
+      ;;
+    u)	DEUSERNAME=$OPTARG
+		;;
+	U)  UPGRADE=${OPTARG^^}
+		if [[ "$UPGRADE" != "Y" ]] && [[ "$UPGRADE" != "N" ]]; then
+			echo -e "${ALERT}-U only accepts Y or N as parameters${NORM}"
+			HELP
+		fi
+		;;
+    p)  DEPASSWORD=$OPTARG
+		;;
+    h)  #show help
+    	HELP
+      ;;
+    v)  #print version and exit
+		echo "VERSION: ${VERSION}"
+		exit 0
+		;;
+    \?) #unrecognized option - show help
+    	echo -e \\n"Option -${BOLD}$OPTARG${NORM} not allowed."
+      HELP
+      ;;
+  esac
+done
+
+shift $((OPTIND-1))
+#####################################################################
+##Main Body
+##################################
+##Housekeeping
+#Always assume that we are going to keep the files if we are just fetching
+[[ $FETCH_ONLY == "Y" ]] && KEEP="Y"
+
+#prompt for important variables that haven't been explicity set via arguments
+if [[ -z $KEEP ]]; then
+	until  [[ "$KEEP" == "Y" ]] || [[ "$KEEP" == "N" ]]; do
+		read -p "Do you want to keep the setup files after setup is complete? (Y/N): " KEEP
+		KEEP=${KEEP^^}
+	done
+fi
+
+#If we're not just fetching, let's grab and validate our config settings
+#Let's do this before the file fetch so that our users can go do other things
+if [[ $FETCH_ONLY == "N" ]]; then
+	FETCH_ENGINE_PARAMS
+	#LSEVAL
+	ENGINE_TEST
+	#FETCH_VM_PARAMS
+	:
+fi
+
+#FETCH_AWSCLI
+
+if [[ "$FETCH_ONLY" == "Y" ]]; then
+	#We're done, if we were only fetching files
+	echo "-f was given. Files only downloaded. No installation will occur"
+else
+	#Otherwise now it is time to do work
+	#do something on both
+	if [[ "$HOSTNAME" == "linuxtarget.delphix.local" ]]; then
+		#do something to LT
+		:
+	elif [[ "$HOSTNAME" == "linuxsource.delphix.local" ]]; then
+		GET_DATABASE_REFS
+		curl -X POST -k --data @- "http://${DEIP}/resources/json/delphix/database/${TARGETCONTAINERREF}/refresh" \
+		    -b ~/cookies.txt -H "Content-Type: application/json" <<-EOF
+		{
+		    "type": "RefreshParameters",
+		    "timeflowPointParameters": {
+		        "type": "TimeflowPointSemantic",
+		        "container": "${SOURCECONTAINERREF}",
+		        "location": "LATEST_SNAPSHOT"
+		    }
+		}
+		EOF
+		echo -e \\n
+	fi
+	#do something on both again
+fi
+##################################
+##Cleanup and wrap up
+#UPDATE_MANIFEST
+#CLEAN_UP
+#REFRESH
+#SHRINK_RAY
+#Let them know we're done
+echo "${SCRIPT} is complete."

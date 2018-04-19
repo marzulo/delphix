@@ -1,0 +1,62 @@
+
+SET LINESIZE 300
+COLUMN FIRST_NAME FORMAT A20
+COLUMN LAST_NAME FORMAT A20
+COLUMN DEPT_NAME FORMAT A20
+COLUMN CITY FORMAT A20
+set pages 500
+
+
+'
+"
+~
+
+10.0.1.10:8282/dmsuite (axistech/Axis_123)
+10.0.1.20:1080 (emp prod instance)
+10.0.1.30:7080 (msource instance)
+10.0.1.30:2080 (dev instance)
+10.0.1.30:3080 (qa instance)
+
+
+https://docs.delphix.com/display/PRIME/Linking+a+Masking+Job+to+a+Hook+Operation
+
+ssh root@10.0.1.30
+yum install -y xml2
+
+su - delphix
+
+vi /home/delphix/mask_dev.sh
+
+#!/bin/bash
+#v1.0.1
+#1.0.1 - Changed defaults for DMIP and DMPORT
+#2015-09-14 - Adam Bowen - Created
+DMIP="10.0.1.30"
+DMPORT="8282"
+BaseURL="http://${DMIP}:${DMPORT}"
+JOBID=15
+APPLICATION="Employee%20Application"
+DMUSER=Axistech
+DMPASS=Axis_123
+echo ${BaseURL}
+echo "Authenticating"
+myLoginToken=$(curl -sIX GET "${BaseURL}/dmsuite/apiV4/login?user=${DMUSER}&password=${DMPASS}" | grep auth_token | cut -f2 -d':' | tr -d ' ')
+echo "Authentication Successful"
+echo "Executing Masking Job"
+curl -sX POST -H "auth_token:${myLoginToken}" -H "Content-Type:application/xml" -d "<MaskingsRequest></MaskingsRequest>" ${BaseURL}/dmsuite/apiV4/applications/${APPLICATION}/maskingjobs/$JOBID/run > /dev/null
+echo "Waiting for Masking Job to finish"
+STATUS=`curl -sX GET -H "auth_token:${myLoginToken}" -H "Content-Type:application/xml"  ${BaseURL}/dmsuite/apiV4/applications/${APPLICATION}/maskingjobs/$JOBID/results | xml2 | grep Masking/Status=| sed 's/.*=//'`
+while [ "${STATUS}" = "RUNNING" ]; do
+        echo "${STATUS}"
+        sleep 5
+        STATUS=`curl -sX GET -H "auth_token:${myLoginToken}" -H "Content-Type:application/xml"  ${BaseURL}/dmsuite/apiV4/applications/${APPLICATION}/maskingjobs/$JOBID/results | xml2 | grep Masking/Status=| sed 's/.*=//'`
+done
+echo "${STATUS}"
+if [ "${STATUS}" != "SUCCESS" ]; then
+        echo "Masking job did not complete successfully"
+        exit 1
+fi
+
+====================
+adasdas
+

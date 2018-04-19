@@ -1,0 +1,13 @@
+Windows PowerShell
+Test-NetConnection <IP> -Port <Porta>
+
+Python
+
+import socket
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)\
+s.connect(("192.168.1.20", 8080))
+s.close()
+
+if you receive a Connection refused that means closed port!
+
+curl -v telnet://tim5230.dcenter.delphix.com:22

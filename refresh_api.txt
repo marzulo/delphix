@@ -1,0 +1,78 @@
+#!/bin/sh
+# Script desenvolvido por Andre Marzulo em nome da Delphix do Brasil
+
+### MEXER APENAS NESSAS VARIAVES!!!
+DELPHIX_IP="54.236.186.193"
+DELPHIX_LOGIN="delphix_admin"
+DELPHIX_PASS="landshark"
+VDB_NAME="vdbtest"
+DSOURCE_NAME="Employee Database"
+
+
+### DAQUI PRA BAIXO SOH ALTERE SE SOUBER O QUE ESTA FAZENDO!
+echo "Verificando Engine"
+curl -s -X POST -k --data @- http://${DELPHIX_IP}/resources/json/delphix/session -c ~/cookies.txt -H "Content-Type: application/json" <<-EOF
+	{
+	    "type": "APISession",
+	    "version": {
+	        "type": "APIVersion",
+	        "major": 1,
+	        "minor": 6,
+	        "micro": 0
+	    }
+	}
+	EOF
+
+echo "Logando na Engine"
+curl -s -X POST -k --data @- http://${DELPHIX_IP}/resources/json/delphix/login -b ~/cookies.txt -H "Content-Type: application/json"<<-EOF
+	{
+	    "type": "LoginRequest",
+	    "username": "${DELPHIX_LOGIN}",
+	    "password": "${DELPHIX_PASS}"
+	}
+	EOF
+
+echo "Obtendo containers"
+DATABASES=$(curl -X GET -k "http://${DELPHIX_IP}/resources/json/delphix/database" -b ~/cookies.txt -H "Content-Type: application/json")
+TARGETDATABASE=$(echo $DATABASES | jq -r ".result[] | select(.name == \"${VDB_NAME}\")")
+TARGETCONTAINERREF=$(echo $TARGETDATABASE | jq -r '.reference')
+SOURCEDATABASE=$(echo $DATABASES | jq -r ".result[] | select(.name == \"${DSOURCE_NAME}\")")
+SOURCECONTAINERREF=$(echo $SOURCEDATABASE | jq -r '.reference')
+echo "Source Database Reference, Target Database Reference:"
+echo "${SOURCECONTAINERREF}, ${TARGETCONTAINERREF}"
+
+echo "Executando refresh"
+EXECUTACMD=$(curl -X POST -k --data @- "http://${DELPHIX_IP}/resources/json/delphix/database/${TARGETCONTAINERREF}/refresh" -b ~/cookies.txt -H "Content-Type: application/json" <<-EOF
+		{
+		    "type": "OracleRefreshParameters",
+		    "timeflowPointParameters": {
+		        "type": "TimeflowPointSemantic",
+		        "container": "${SOURCECONTAINERREF}",
+		        "location": "LATEST_SNAPSHOT"
+		    }
+		}
+		EOF)
+JOBID=$(echo $EXECUTACMD | jq -r '.job')
+
+echo "Job ID: $JOBID"
+
+JOBDESC=$(curl -X GET -k "http://${DELPHIX_IP}/resources/json/delphix/job/${JOBID}" -b ~/cookies.txt -H "Content-Type: application/json")
+JOBRESULT=$(echo $JOBDESC | jq -r '.result')
+JOBSTATE=$(echo $JOBRESULT | jq -r '.jobState')
+
+while [ "${JOBSTATE}" = "RUNNING" ]; do
+   echo "${JOBSTATE}"
+   sleep 10
+   JOBDESC=$(curl -X GET -k "http://${DELPHIX_IP}/resources/json/delphix/job/${JOBID}" -b ~/cookies.txt -H "Content-Type: application/json")
+   JOBRESULT=$(echo $JOBDESC | jq -r '.result')
+   JOBSTATE=$(echo $JOBRESULT | jq -r '.jobState')
+done
+
+echo "${JOBSTATE}"
+
+if [ "${JOBSTATE}" != "COMPLETED" ]; then
+   echo "Refresh nao terminou com sucesso"
+   exit 1
+fi
+
+echo "Terminou"

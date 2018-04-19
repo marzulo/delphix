@@ -1,0 +1,22 @@
+0 0 31 12 * /var/opt/delphix/lockeng.sh > /var/opt/delphix/lockeng.log 2>&1
+
+#!/bin/bash -x
+date
+cp /var/opt/delphix/server.conf /var/opt/delphix/server.conf.old
+cp /var/opt/delphix/server.conf.lock /var/opt/delphix/server.conf
+/opt/delphix/server/bin/jmxtool tunable set lockdown_install_deadman_days 30
+/opt/delphix/server/bin/jmxtool tunable set phone_home_timeout_days 8
+svcadm restart mgmt
+date
+
+
+
+#!/bin/bash -x
+date
+cp /var/opt/delphix/server.conf /var/opt/delphix/server.conf.old
+cp /var/opt/delphix/server.conf.lock /var/opt/delphix/server.conf
+/opt/delphix/server/bin/jmxtool tunable set lockdown_install_deadman_days 0
+/opt/delphix/server/bin/jmxtool tunable set phone_home_timeout_days 0
+svcadm restart mgmt
+date
+

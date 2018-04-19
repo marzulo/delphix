@@ -1,0 +1,57 @@
+grant alter any trigger to xxx;
+alter user xx identified by xxx;
+grant dba to xx;
+
+set echo off pages 0 linesize 500 head off
+
+spool /home/delphix_os/scripts/sql_disable_list_R.sql
+select 'ALTER TABLE '||owner||'.'||table_name||' DISABLE CONSTRAINT '||constraint_name||';'
+from all_constraints where owner = xxx and constraint_type = 'R' and status = 'ENABLED';
+spool off
+
+spool /home/delphix_os/scripts/sql_enable_list_R.sql
+select 'ALTER TABLE '||owner||'.'||table_name||' ENABLE CONSTRAINT '||constraint_name||';'
+from all_constraints where owner = xxx and constraint_type = 'R' and status = 'ENABLED';
+spool off
+
+--@/home/delphix_os/scripts/sql_disable_list_R.sql
+
+spool /home/delphix_os/scripts/sql_disable_list_C.sql
+select 'ALTER TABLE '||owner||'.'||table_name||' DISABLE CONSTRAINT '||constraint_name||';'
+from all_constraints where owner = xxx and constraint_type = 'C' and status = 'ENABLED';
+spool off
+
+spool /home/delphix_os/scripts/sql_enable_list_R.sql
+select 'ALTER TABLE '||owner||'.'||table_name||' ENABLE CONSTRAINT '||constraint_name||';'
+from all_constraints where owner = xxx and constraint_type = 'C' and status = 'ENABLED';
+spool off
+
+--@/home/delphix_os/scripts/sql_disable_list_C.sql
+
+ 
+
+spool /home/delphix_os/scripts/sql_disable_list_U.sql
+select 'ALTER TABLE '||owner||'.'||table_name||' DISABLE CONSTRAINT '||constraint_name||';'
+from all_constraints where owner = xxx and constraint_type = 'U' and status = 'ENABLED';
+spool off
+
+spool /home/delphix_os/scripts/sql_enable_list_U.sql
+select 'ALTER TABLE '||owner||'.'||table_name||' ENABLE CONSTRAINT '||constraint_name||';'
+from all_constraints where owner = xxx and constraint_type = 'U' and status = 'ENABLED';
+spool off
+
+--@/home/delphix_os/scripts/sql_disable_list_U.sql
+
+
+spool /home/delphix_os/scripts/sql_disable_list_P.sql
+select 'ALTER TABLE '||owner||'.'||table_name||' DISABLE CONSTRAINT '||constraint_name||';'
+from all_constraints where owner = xxx and constraint_type = 'P' and status = 'ENABLED';
+spool off
+
+spool /home/delphix_os/scripts/sql_enable_list_P.sql
+select 'ALTER TABLE '||owner||'.'||table_name||' ENABLE CONSTRAINT '||constraint_name||';'
+from all_constraints where owner = xxx and constraint_type = 'P' and status = 'ENABLED';
+spool off
+
+--@/home/delphix_os/scripts/sql_disable_list_P.sql
+

@@ -1,0 +1,41 @@
+#!/bin/sh -x
+
+DELPHIX_IP="10.192.7.197"
+DELPHIX_LOGIN="delphix_admin"
+DELPHIX_PASS="landshark"
+VDB_NAME="VDBSAP"
+DSOURCE_NAME="dsrc_sigasap"
+
+#MASKING
+MASKING_PORT="8282"
+MASK_LOGIN="delphix_admin"
+MASK_PASSWORD="Delphix_123"
+JOBID=3
+APPLICATION=AWS
+
+BASEURL="http://${DELPHIX_IP}:${MASKING_PORT}"
+echo ${BASEURL}
+echo "Authenticating"
+MYLOGINTOKEN=$(curl -sIX GET "${BASEURL}/dmsuite/apiV4/login?user=${MASK_LOGIN}&password=${MASK_PASSWORD}" | grep auth_token | cut -f2 -d':' | tr -d ' ')
+echo $MYLOGINTOKEN
+echo "Authentication Successful"
+echo "Executing Masking Job"
+curl -sX POST -H "auth_token:${MYLOGINTOKEN}" -H "Content-Type:application/xml" -d "<MaskingsRequest></MaskingsRequest>" ${BASEURL}/dmsuite/apiV4/applications/$APPLICATION/maskingjobs/$JOBID/run > /dev/null
+
+echo "Waiting for Masking Job to finish"
+STATUS=$(curl -sX GET -H "auth_token:${MYLOGINTOKEN}" -H "Content-Type:application/xml"  \
+	${BASEURL}/dmsuite/apiV4/applications/${APPLICATION}/maskingjobs/${JOBID}/results | xml2 | grep Masking/Status=| sed 's/.*=//')
+
+while [ "${STATUS}" = "RUNNING" ]; do
+   echo "${STATUS}"
+   sleep 5
+   STATUS=`curl -sX GET -H "auth_token:${MYLOGINTOKEN}" -H "Content-Type:application/xml" \
+      ${BASEURL}/dmsuite/apiV4/applications/${APPLICATION}/maskingjobs/${JOBID}/results | xml2 | grep Masking/Status=| sed 's/.*=//'`
+done
+
+echo "${STATUS}"
+
+if [ "${STATUS}" != "SUCCESS" ]; then
+   echo "Masking job did not complete successfully"
+   exit 1
+fi

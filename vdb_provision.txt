@@ -1,0 +1,27 @@
+database
+provision
+defaults
+set type=TimeflowPointSemantic
+set container=rdmtzstd
+set location=LATEST_SNAPSHOT
+commit
+set container.name=rddev01
+set container.group="Target - Dev01"
+set container.group="Target - Dev01"
+set source.mountBase=/mnt/provision
+set sourceConfig.type=OracleSIConfig
+set sourceConfig.databaseName=rddev01
+set sourceConfig.uniqueName=rddev01
+edit sourceConfig.instance
+set instanceNumber=1
+set instanceName=rddev01
+back
+set sourceConfig.repository='/u01/app/oracle/product/11.2.0/db'
+set source.configTemplate=RDDEV
+unset source.configParams
+delphix database provision *> set source.configTemplate=RDDEV
+delphix database provision *> commit
+   Error: The input parameters "configTemplate" and "configParams" are mutually exclusive.
+  Action: Provide only one of the parameters and try again.
+delphix database provision *> set source.configTemplate='RDDEV'
+
