@@ -1,0 +1,257 @@
+{
+    "type": "Toolkit",
+    "name": "mongo",
+    "version": "0.9.1",
+    "buildApi": "1.7.0",
+    "defaultLocale": "en-us",
+    "prettyName": "MongoDB",
+    "hostTypes": [ "UNIX" ],
+    "virtualSourceDefinition": {
+        "type": "ToolkitVirtualSource",
+        "parameters" : {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "mongoUserName": {
+                    "type": "string",
+                    "prettyName": "MongoDB User",
+                    "description": "User must have dbAdmin and clusterAdmin roles",
+                    "default": "clusteradmin",
+                    "environmentVariable": "MONGO_USER_NAME"
+                },
+                "mongoPassword": {
+                    "type": "string",
+                    "format": "password",
+                    "prettyName": "MongoDB Password",
+                    "description": "Password for MongoDB User",
+                    "default": "delphix",
+                    "environmentVariable": "MONGO_USER_PASSWORD"
+                },
+                "bindIP": {
+                    "type": "string",
+                    "prettyName": "bindIP String",
+                    "description": "CSV string of allowed IPs",
+                    "default": "",
+                    "environmentVariable": "MONGO_BIND_IP"
+                },
+                "mongoPort": {
+                    "type": "integer",
+                    "prettyName": "Port Number",
+                    "description": "MongoDB",
+                    "default": 27021,
+                    "environmentVariable": "MONGO_PORT"
+                },
+                "oplogSize": {
+                    "type": "integer",
+                    "prettyName": "Oplog Size (MB)",
+                    "description": "Size of the MongoDB oplog in MB",
+                    "default": 1024,
+                    "environmentVariable": "MONGO_OPLOG_SIZE"
+                },
+                "journalInterval": {
+                    "type": "integer",
+                    "prettyName": "Journal Commit Interval (ms)",
+                    "description": "How frequently should the journal data be flushed to disk",
+                    "default": 30,
+                    "environmentVariable": "MONGO_JOURNAL_FLUSH"
+                }
+            }
+        }
+    },
+    "linkedSourceDefinition": {
+        "type": "ToolkitLinkedStagedSource",
+        "parameters": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "standbyHost": {
+                    "type": "string",
+                    "prettyName": "Staging Host",
+                    "description": "Hostname of the new staging Mongo instance",
+                    "default": "linuxtarget",
+                    "environmentVariable": "MONGO_STANDBY_HOST"
+                 },
+                "mongoUserName": {
+                    "type": "string",
+                    "prettyName": "MongoDB User",
+                    "description": "User must have clusterAdmin role",
+                    "default": "clusteradmin",
+                    "environmentVariable": "MONGO_USER_NAME"
+                 },
+                "mongoPassword": {
+                    "type": "string",
+                    "format": "password",
+                    "prettyName": "MongoDB Password",
+                    "description": "Password for MongoDB User",
+                    "default": "delphix",
+                    "environmentVariable": "MONGO_USER_PASSWORD"
+                 },
+                "keyfilePath": {
+                    "type": "string",
+                    "prettyName": "MongoDB Keyfile path",
+                    "description": "Path to MongoDB keyfile on standby machine. Must have 600 permission for the provisioning user.",
+                    "default": "/home/delphix/mongodb-keyfile",
+                    "environmentVariable": "MONGO_KEYFILE_PATH"
+                 },
+                "storageEngine": {
+                    "type": "string",
+                    "prettyName": "Storage Engine",
+                    "description": "Select Storage engine to use",
+                    "enum": ["mmapv1", "wiredTiger"],
+                    "default": "wiredTiger",
+                    "environmentVariable": "MONGO_STORAGE_ENGINE"
+                 },
+                "bindIP": {
+                    "type": "string",
+                    "prettyName": "bindIP String",
+                    "description": "CSV string of allowed IPs",
+                    "default": "",
+                    "environmentVariable": "MONGO_BIND_IP"
+                 },
+                "replicaSet": {
+                    "type": "string",
+                    "prettyName": "Replicaset",
+                    "description": "Name of the replica set to connect to",
+                    "default": "dlpxreplset",
+                    "environmentVariable": "MONGO_REPLICASET"
+                 },
+                "mongoPort": {
+                    "type": "integer",
+                    "prettyName": "Port Number",
+                    "description": "Port number to use for the Mongo staging instance ",
+                    "default": 27020,
+                    "environmentVariable": "MONGO_PORT"
+                 },
+                "oplogSize": {
+                    "type": "integer",
+                    "prettyName": "Oplog Size (MB)",
+                    "description": "Size of the MongoDB oplog in MB",
+                    "default": 1024,
+                    "environmentVariable": "MONGO_OPLOG_SIZE"
+                 },
+                "journalInterval": {
+                    "type": "integer",
+                    "prettyName": "Journal Commit Interval (ms)",
+                    "description": "How frequently should the journal data be flushed to disk",
+                    "default": 30,
+                    "environmentVariable": "MONGO_JOURNAL_FLUSH"
+                 }
+            }
+        }
+    },
+    "discoveryDefinition": {
+    "type": "ToolkitDiscoveryDefinition",
+    "repositorySchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+            "mongoInstallPath": {
+                "type": "string",
+                "prettyName": "Mongo Install Path",
+                "description": "Path to Mongo binaries"
+            },
+            "mongoShellPath": {
+                "type": "string",
+                "prettyName": "Mongo Shell Path",
+                "description": "Path to Mongo Shell"
+            },
+            "version": {
+                "type": "string",
+                "prettyName": "Version",
+                "description": "MongoDB Version"
+            },
+            "prettyName": {
+                "type": "string",
+                "prettyName": "Pretty Name",
+                "description": "Pretty name of this repository"
+            }
+        }
+    },
+    "repositoryIdentityFields": [
+      "mongoInstallPath",
+      "mongoShellPath"
+    ],
+    "repositoryNameField": "prettyName",
+    "sourceConfigSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+            "dbPath": {
+                "type": "string",
+                "prettyName": "DB Data Path",
+                "description": "Path to Mongo Data"
+            },
+            "mongoPort": {
+                "type": "integer",
+                "prettyName": "Mongo Port",
+                "description": "Mongo Port"
+            },
+            "replicaSet": {
+                "type": "string",
+                "prettyName": "Replica Set Name",
+                "description": "Replica Set in use by source"
+            },
+            "keyfilePath": {
+                "type": "string",
+                "prettyName": "Key File Path",
+                "description": "Location of the Keyhole"
+            },
+            "prettyName": {
+                "type": "string",
+                "prettyName": "Pretty Name",
+                "description": "Pretty name of this source config"
+            }
+        }
+    },
+    "sourceConfigIdentityFields": [
+      "dbPath"
+    ],
+    "sourceConfigNameField": "prettyName"
+  },
+  "defaultLocale": "en-us",
+  "snapshotSchema": {
+    "type" : "object",
+    "additionalProperties" : false,
+    "properties" : {
+      "toolkitVersion": {
+        "type": "string"
+      },
+      "timestamp": {
+        "type": "string"
+      },
+      "architecture": {
+        "type": "string"
+      },
+      "osType": {
+        "type": "string"
+      },
+      "osVersion": {
+        "type": "string"
+      },
+      "mongoVersion": {
+        "type": "string"
+      },
+      "delphixMount": {
+        "type": "string"
+      },
+      "mongoPort": {
+        "type": "integer"
+      },
+      "storageEngine": {
+        "type": "string"
+      },
+      "mongoAuth": {
+        "type": "string"
+      },
+      "replicaSet": {
+        "type": "string"
+      },
+      "journalInterval": {
+        "type": "integer"
+      },
+      "oplogSize": {
+        "type": "integer"
+      }
+    }
+  }
+}

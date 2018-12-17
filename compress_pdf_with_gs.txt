@@ -1,0 +1,2 @@
+gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.6 -dPDFSETTINGS=/ebook -dNOPAUSE -dQUIET -dBATCH -sOutputFile=planetnovo.pdf "PLANETA_TERRA.pdf"
+

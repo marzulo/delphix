@@ -1,0 +1,30 @@
+1) Crear usuario delphix_os en los servidores de origen.
+2) Asegurarse de que el usuario delphix_os tengan las MISMAS variables de ambiente del usuario oracle (umask, $ORACLE_HOME, $PATH).
+3) El usuario delphix_os debe tener el MESMA configuración de grupos del usuario oracle (oinstall y dba)
+4) El usuario delphix_os debe tener también los grupos de ASM, si hay grupos específicos para él.
+5) Crear un directorio en el home del delphix_os: ~/Delphix, con el permiso 770
+6) Asegurar que los servicios estén funcionando en el SO: portmap, nfs, nfslock
+7) Comprobar la existencia del archivo de oratab (/etc/oratab), que tenga permiso de lectura por el delphix_os.
+8) Comprobar la existencia del archivo de orainst.loc (/etc/orainst.loc), que tenga permiso de lectura por el delphix_os.
+9) Verificar la existencia del archivo contenido en orainst.loc ($ INVENTORY_HOME/ContentsXML/inventory.xml) y que tenga permiso de lectura por el delphix_os.
+10) Con el usuario delphix_os, comprobar la existencia del archivo ~/.ssh/authorized_keys. Si no existe, crear. Dejar el permiso en 600.
+11) Agregue la siguiente clave en ese acuario: <delphix> system get sshPublicKey>
+12) Comprobar que el usuario delphix_os tenga permiso para ejecutar los comandos crsctl y srvctl en todos los nodos del RAC.
+
+13) Asegurar que el delphix_os tenga permiso de sudo para ejecutar ps, en los archivos de sudoers (/etc/sudoers), según ejemplo:
+Defaults:delphix_os !requiretty
+delphix_os ALL=NOPASSWD:/bin/ps
+
+14) Crear usuario en la base de datos llamada delphix_db, usando las siguientes opciones de configuración (una u otra):
+14.a) Vía script disponible en: https://docs.delphix.com/docs/files/83053483/83053484/1/1499273038810/createDelphixDBUser.sh
+14.b) Vaya a continuación, con sysdba (sqlplus / as sysdba):
+create or replace view v_x$kccfe as select * from x$kccfe;
+grant select on v_x$kccfe to delphix_db;
+create synonym delphix_db.x$kccfe for v_x$kccfe;
+grant select any dictionary to delphix_db;
+
+15) Recomendamos FORTEMENTE activar el BCT en la base de datos de origen.
+
+16) Abrir puertos de red delphix para origen: TCP / UDP 22, 1521, 50001
+
+17) Abrir puertos de red de origen para delphix: TCP / UDP 111, 1110, 2049, 4045, 5001, 8341, 8415, 50001, 32767-65535

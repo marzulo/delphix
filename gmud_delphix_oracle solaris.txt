@@ -1,0 +1,40 @@
+SOURCE (10.10.198.64 / 10.10.198.164):
+
+1) Criar um diretório no home do orainst: ~/Delphix, com permissão 770
+2) Garantir que os serviços estejam funcionando no SO: portmap, nfs, nfslock
+3) Com o usuário orainst, verificar a existência do arquivo ~/.ssh/authorized_keys. Caso não exista, criar. Deixar a permissão em 600.
+4) Verificar que o usuário orainst tenha permissão de executar os comandos crsctl e srvctl em todos os nós do RAC.
+
+5) Garantir que o orainst tenha permissão de sudo para executar ps, no arquivos de sudoers (/etc/sudoers), conforme exemplo:
+Defaults:orainst !requiretty
+orainst ALL=NOPASSWD:/usr/bin/pargs
+
+6) Abrir portas de rede delphix para (10.10.198.64 / 10.10.198.164): TCP/UDP 22, 1521, 50001
+
+7) Abrir portas de rede (10.10.198.64 / 10.10.198.164) para delphix: TCP/UDP 111, 1110, 2049, 4045, 5001, 8341, 8415, 50001, 32767-65535
+
+
+TARGET (10.10.198.167):
+
+1) Criar um diretório no home do orainst: ~/Delphix, com permissão 770
+2) Garantir que os serviços estejam funcionando no SO: portmap, nfs, nfslock
+3) Verificar a existência do arquivo de oratab (/etc/oratab), que tenha permissão de leitura pelo orainst.
+4) Verificar a existência do arquivo de orainst.loc (/etc/orainst.loc), que tenha permissão de leitura pelo orainst.
+5) Verificar a existência do arquivo contido no orainst.loc ($INVENTORY_HOME/ContentsXML/inventory.xml) e que tenha permissão de leitura pelo orainst.
+6) Com o usuário orainst, verificar a existência do arquivo ~/.ssh/authorized_keys. Caso não exista, criar. Deixar a permissão em 600.
+7) Verificar que o usuário orainst tenha permissão de executar os comandos crsctl e srvctl em todos os nós do RAC.
+8) Garantir que o usuário orainst tenha permissão de escrita no diretório $ORACLE_HOME/dbs (chmod g+w $ORACLE_HOME/dbs))
+9) Criar um diretório /mnt/provision, com permissão 777 e tendo o orainst como owner.
+10) O binário do Oracle ($ORACLE_HOME/bin/oracle) deve possuir as flags SETUID e SETGID configuradas (no minimo -rwsr-s–x (06751))
+11) Garantir que o Listener esteja no ar (lsnrctl status ou lsnrctl start).
+
+12) Garantir que o delphix_os tenha permissão de sudo para executar ps, no arquivos de sudoers (/etc/sudoers), conforme exemplo:
+Defaults	listpw=all
+User_Alias	DELPHIX_USER=orainst
+Cmnd_Alias	DELPHIX_CMDS=/usr/sbin/mount, /usr/sbin/umount, /usr/bin/pargs
+DELPHIX_USER ALL=(ALL) NOPASSWD: DELPHIX_CMDS
+
+
+13) Abrir portas de rede delphix para <source1>: TCP/UDP 22, 1521, 50001
+
+14) Abrir portas de rede <source1> para delphix: TCP/UDP 111, 1110, 2049, 4045, 5001, 8341, 8415, 50001, 32767-65535

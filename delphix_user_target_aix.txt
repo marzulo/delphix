@@ -1,0 +1,37 @@
+1) Criar usuário delphix_os no servidores SAP de destino.
+2) Garantir que o usuário delphix_os tenham as MESMAS variaveis de ambiente do usuário oracle (umask, $ORACLE_HOME, $PATH).
+3) O usuário delphix_os deve ter a MESMA configuração de grupos do usuário oracle (oinstall e dba)
+4) O usuário delphix_os deve ter também os grupos de ASM, caso existam grupos especificos para ele.
+5) Criar um diretório no home do delphix_os: ~/Delphix, com permissão 770
+6) Garantir que os serviços estejam funcionando no SO: portmap, nfs, nfslock
+7) Verificar a existência do arquivo de oratab (/etc/oratab), que tenha permissão de leitura pelo delphix_os.
+8) Verificar a existência do arquivo de orainst.loc (/etc/orainst.loc), que tenha permissão de leitura pelo delphix_os.
+9) Verificar a existência do arquivo contido no orainst.loc ($INVENTORY_HOME/ContentsXML/inventory.xml) e que tenha permissão de leitura pelo delphix_os.
+10) Com o usuário delphix_os, verificar a existência do arquivo ~/.ssh/authorized_keys. Caso não exista, criar. Deixar a permissão em 600.
+11) Adicionar a seguinte chave nesse aquivo: <delphix> system get sshPublicKey>
+12) Verificar que o usuário delphix_os tenha permissão de executar os comandos crsctl e srvctl em todos os nós do RAC.
+13) Garantir que o usuário delphix_os tenha permissão de escrita no diretório $ORACLE_HOME/dbs (chmod g+w $ORACLE_HOME/dbs))
+14) Criar um diretório /mnt/provision, com permissão 777 e tendo o delphix_os como owner.
+15) O binário do Oracle ($ORACLE_HOME/bin/oracle) deve possuir as flags SETUID e SETGID configuradas (no minimo -rwsr-s–x (06751))
+16) Garantir que o Listener esteja no ar (lsnrctl status ou lsnrctl start).
+
+17) Garantir que o delphix_os tenha permissão de sudo para executar ps, no arquivos de sudoers (/etc/sudoers), conforme exemplo:
+Defaults:delphix_os !requiretty
+delphix_os ALL=NOPASSWD: /usr/sbin/mount, /usr/sbin/umount, /usr/sbin/nfso, /usr/bin/ps
+
+18) Abrir portas de rede delphix para SAP de destino: TCP/UDP 22, 1521, 50001
+
+19) Abrir portas de rede SAP de destino para delphix: TCP/UDP 111, 1110, 2049, 4045, 5001, 8341, 8415, 50001, 32767-65535
+
+20) Se possível, configurar o servidor AIX de destino (Dev/Test), com os seguintes parâmetros:
+> By default, the network tunables on an AIX system aren’t set optimally
+> for anything above a 100 MB network. Given that most customers are
+> running GB or 10 GB networks, the first step to improving network
+> performance is to set some basic tunables. The first set is done using
+> the no command.
+Tunables
+no -p -o rfc1323=1
+no -p -o tcp_sendspace=262144
+no -p -o tcp_recvspace=262144
+no -p -o udp_sendspace=655360
+no -p -o udp_recvspace=655360

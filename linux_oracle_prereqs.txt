@@ -64,6 +64,12 @@ wget https://github.com/stedolan/jq/releases/download/jq-1.3/jq-linux-x86_64
 
 iptables -I INPUT -p tcp --dport 1521 -j ACCEPT
 
+sudo iptables -t nat -A OUTPUT -p all -d <DELPHIX_AWS_IP> -j DNAT --to-destination <DELPHIX_NAT_IP>
+
+/opt/delphix/server/bin/jmxtool tunable set pro.restrict_target_ip false
+/var/delphix/server/etc/delphix_config_override.properties file.
+PRO.RESTRICT_TARGET_IP=false.
+
 
 export ORACLE_SID=INVED1
 export DELPHIX_ENGINE="10.112.57.141"

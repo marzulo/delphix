@@ -1,0 +1,100 @@
+#================================================================================
+#  File:    display.ps1
+#  Type:    Powershell script
+#  Date:    04-Nov 2016
+#  Author:  Delphix
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+#
+#  Copyright (c) 2016 by Delphix. All rights reserved.
+# 
+#  Description:
+#
+#   Windows Powershell script intended to be used for debugging purposes, by
+#   logging timestamped variable values with the name of the hook from which
+#   it was called to an output file on the user's desktop.
+#
+#  Usage:
+#
+#   display.ps1 <hook-name>
+#
+#   where:
+#       <hook-name>   the name of the dSource or VDB hook from
+#               which this script is called:
+#                   For dSources...
+#                       Pre-Sync, Post-Sync
+#                   For VDBs...
+#                       Configure-Clone,
+#                       Pre-Refresh, Post-Refresh,
+#                       Pre-Rewind, Post-Rewind,
+#                       Pre-Snapshot, Post-Snapshot
+#
+#   If the hook-name does not have the correct text, then the script will not
+#   not recognize it and will emit an error message.
+#
+#  Modifications:
+#================================================================================
+param([string]$hookName)
+#
+#--------------------------------------------------------------------------------
+# Set up variables for use within the script...
+#--------------------------------------------------------------------------------
+$outDir = "C:\TEMP"
+$timeStamp = Get-Date -format o
+#
+#--------------------------------------------------------------------------------
+# Output values for Windows environment variables set with hook session by the
+# Delphix virtualization engine...
+#
+# If the name of the hook implies a VDB hook, then output the values for the
+# relevant variables...
+#--------------------------------------------------------------------------------
+if ( ( $hookName.ToUpper() -eq "PRE-START" ) -or
+     ( $hookName.ToUpper() -eq "POST-START" ) -or
+     ( $hookName.ToUpper() -eq "PRE-STOP" ) -or
+     ( $hookName.ToUpper() -eq "POST-STOP" ) -or
+     ( $hookName.ToUpper() -eq "PRE-SCRIPT" ) -or
+     ( $hookName.ToUpper() -eq "POST-SCRIPT" ) -or
+     ( $hookName.ToUpper() -eq "CONFIGURE-CLONE" ) -or
+     ( $hookName.ToUpper() -eq "PRE-REFRESH" ) -or
+     ( $hookName.ToUpper() -eq "POST-REFRESH" ) -or
+     ( $hookName.ToUpper() -eq "PRE-SNAPSHOT" ) -or
+     ( $hookName.ToUpper() -eq "POST-SNAPSHOT" ) ) {
+    $outFile = $outDir + "\HOOK_OUTPUT_" + $env:VDB_DATABASE_NAME + ".TXT"
+    $timeStamp + "|" + $hookName.ToUpper() + ": VDB_INSTANCE_HOST is '" + $env:VDB_INSTANCE_HOST + "'" | Out-File -FilePath $outFile -Append
+    $timeStamp + "|" + $hookName.ToUpper() + ": VDB_INSTANCE_PORT is '" + $env:VDB_INSTANCE_PORT + "'" | Out-File -FilePath $outFile -Append
+    $timeStamp + "|" + $hookName.ToUpper() + ": VDB_INSTANCE_NAME is '" + $env:VDB_INSTANCE_NAME + "'" | Out-File -FilePath $outFile -Append
+    $timeStamp + "|" + $hookName.ToUpper() + ": VDB_DATABASE_NAME is '" + $env:VDB_DATABASE_NAME + "'" | Out-File -FilePath $outFile -Append
+} else {
+    #
+    #------------------------------------------------------------------------
+    # If the name of the hook implies a dSource hook, then output the values
+    # for the relevant variables...
+    #------------------------------------------------------------------------
+    if ( ( $hookName.ToUpper() -eq "PRE-SYNC" ) -or
+         ( $hookName.ToUpper() -eq "POST-SYNC" )) {
+        $outFile = $outDir + "\HOOK_OUTPUT_" + $env:SOURCE_DATABASE_NAME + ".TXT"
+        $timeStamp + "|" + $hookName.ToUpper() + ": SOURCE_INSTANCE_HOST is '" + $env:SOURCE_INSTANCE_HOST + "'" | Out-File -FilePath $outFile -Append
+        $timeStamp + "|" + $hookName.ToUpper() + ": SOURCE_INSTANCE_PORT is '" + $env:SOURCE_INSTANCE_PORT + "'" | Out-File -FilePath $outFile -Append
+        $timeStamp + "|" + $hookName.ToUpper() + ": SOURCE_INSTANCE_NAME is '" + $env:SOURCE_INSTANCE_NAME + "'" | Out-File -FilePath $outFile -Append
+        $timeStamp + "|" + $hookName.ToUpper() + ": SOURCE_DATABASE_NAME is '" + $env:SOURCE_DATABASE_NAME + "'" | Out-File -FilePath $outFile -Append
+    } else {
+        #
+        #----------------------------------------------------------------
+        # If the name of the hook is not recognized, then output an error
+        # message to that effect...
+        #----------------------------------------------------------------
+        $outFile = $outDir + "\HOOK_OUTPUT_UNKNOWN.TXT"
+        $timeStamp + ": unknown hook name '" + $hookName + "'" | Out-File -FilePath $outFile -Append
+    }
+}

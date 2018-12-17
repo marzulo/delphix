@@ -1,0 +1,37 @@
+1) Crear usuario delphix_os en los servidores de destino.
+2) Asegurarse de que el usuario delphix_os tengan las MISMAS variables de ambiente del usuario oracle (umask, $ORACLE_HOME, $PATH).
+3) El usuario delphix_os debe tener el MESMA configuración de grupos del usuario oracle (oinstall y dba)
+4) El usuario delphix_os debe tener también los grupos de ASM, si hay grupos específicos para él.
+5) Crear un directorio en el home del delphix_os: ~/Delphix, con el permiso 770
+6) Asegurar que los servicios estén funcionando en el SO: portmap, nfs, nfslock
+7) Comprobar la existencia del archivo de oratab (/etc/oratab), que tenga permiso de lectura por el delphix_os.
+8) Comprobar la existencia del archivo de orainst.loc (/etc/orainst.loc), que tenga permiso de lectura por el delphix_os.
+9) Verificar la existencia del archivo contenido en orainst.loc ($INVENTORY_HOME/ContentsXML/inventory.xml) y que tenga permiso de lectura por el delphix_os.
+10) Con el usuario delphix_os, comprobar la existencia del archivo ~/.ssh/authorized_keys. Si no existe, crear. Dejar el permiso en 600.
+11) Agregue la siguiente clave en ese acuario: <delphix> system get sshPublicKey>
+12) Comprobar que el usuario delphix_os tenga permiso para ejecutar los comandos crsctl y srvctl en todos los nodos del RAC.
+13) Asegurarse de que el usuario delphix_os tenga permiso de escritura en el directorio $ORACLE_HOME/dbs (chmod g+w $ORACLE_HOME/dbs))
+14) Crear un directorio /mnt/provision, con permiso 777 y teniendo el delphix_os como owner.
+15) El binario de Oracle ($ORACLE_HOME/bin/oracle) debe tener los indicadores SETUID y SETGID configurados (en el mínimo -rwsr-s-x (06751))
+16) Asegúrese de que el Listener esté en el aire (lsnrctl status o lsnrctl start).
+
+17) Asegurarse de que el delphix_os tenga permiso de sudo para ejecutar ps, en los archivos de sudoers (/etc/sudoers), como ejemplo:
+Defaults:delphix_os !requiretty
+delphix_os ALL=NOPASSWD: /usr/sbin/mount, /usr/sbin/umount, /usr/sbin/nfso, /usr/bin/ps
+
+18) Abrir puertos de red delphix para destino: TCP / UDP 22, 1521, 50001
+
+19) Abrir puertos de red destino para delphix: TCP / UDP 111, 1110, 2049, 4045, 5001, 8341, 8415, 50001, 32767-65535
+
+20) Si es posible, configurar el servidor AIX de destino (Dev / Test) con los siguientes parámetros:
+> By default, the network tunables on an AIX system aren’t set optimally
+> for anything above a 100 MB network. Given that most customers are
+> running GB or 10 GB networks, the first step to improving network
+> performance is to set some basic tunables. The first set is done using
+> the no command.
+Tunables
+no -p -o rfc1323=1
+no -p -o tcp_sendspace=262144
+no -p -o tcp_recvspace=262144
+no -p -o udp_sendspace=655360
+no -p -o udp_recvspace=655360
