@@ -13,3 +13,6 @@ net -a (routes)
 
 
 http://people.redhat.com/anderson/crash_whitepaper/
+
+nfsiostat to evaluate NFS IO commands...
+
