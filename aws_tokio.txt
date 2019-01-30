@@ -1,0 +1,158 @@
+10.104.88.11
+delphix
+
+10.100.10.10
+/oracle/ECP/delphix
+SO:oraecp/
+DB:delphix/delphix
+
+
+10.100.10.4
+/oracle/ECQ/delphix
+oraecq/
+
+
+Art. 1o Esta Lei dispõe sobre o tratamento de dados pessoais, inclusive nos meios digitais, por pessoa natural ou por pessoa jurídica de direito público ou privado, com o objetivo de proteger os direitos fundamentais de liberdade e de privacidade e o livre desenvolvimento da personalidade da pessoa natural.
+
+
+pessoa natural ou por pessoa jurídica de direito público ou privado
+
+
+You are invited to a Zoom meeting now. 
+
+Join from PC, Mac, Linux, iOS or Android: https://delphix.zoom.us/j/5959762361
+
+Or iPhone one-tap:
+    Brazil: +552139587888,,5959762361#  or +551146806788,,5959762361# 
+Or Telephone:
+    Dial(for higher quality, dial a number based on your current location): 
+        Brazil: +55 21 3958 7888  or +55 11 4680 6788 
+        Mexico: +52 554 161 4288  or +52 229 910 0061 
+        Chile: +56 41 256 0288  or +56 23 210 9066 
+        Argentina: +54 343 414 5968  or +54 341 512 2188 
+        US: +1 669 900 6833  or +1 646 876 9923 
+        Italy: +39 069 926 8001  or +39 069 480 6488 
+        United Kingdom: +44 (0) 20 3695 0088  or +44 (0) 20 3051 2874 
+        Colombia: +57 2 620 7388  or +57 1 508 7702 
+    Meeting ID: 595 976 2361
+    International numbers available: https://zoom.us/u/b5zgQUayC
+
+
+ELUXDM (volta todos)
+
+WLAXDD (ida eu)
+
+
+
+aws ec2 describe-instances --region sa-east-1 --query 'Reservations[*].Instances[*].[InstanceId,ImageId,Tags[?Key==`Name`].Value]'
+
+
+---com dados 
+aws ec2 describe-volumes --region sa-east-1 --filters Name=attachment.instance-id,Values=i-0cf94fe3e2acc6567 Name=size,Values=4000 --query 'Volumes[*].{ID:VolumeId,Tag:Tags}'
+
+aws ec2 modify-volume --dry-run --volume-id vol-0230b8f73ee2cbadc --size 4000 --volume-type io1 --iops 12000 
+aws ec2 modify-volume --dry-run --volume-id vol-077bdc47973b49cf1 --size 4000 --volume-type io1 --iops 12000 
+aws ec2 modify-volume --dry-run --volume-id vol-0512dda749e855ad4 --size 4000 --volume-type io1 --iops 12000 
+aws ec2 modify-volume --dry-run --volume-id vol-090f3d2086a1a2f36 --size 4000 --volume-type io1 --iops 12000
+
+
+aws ec2 modify-volume --no-dry-run --volume-id vol-0230b8f73ee2cbadc --size 4000 --volume-type io1 --iops 12000 
+aws ec2 modify-volume --no-dry-run --volume-id vol-077bdc47973b49cf1 --size 4000 --volume-type io1 --iops 12000 
+aws ec2 modify-volume --no-dry-run --volume-id vol-0512dda749e855ad4 --size 4000 --volume-type io1 --iops 12000 
+aws ec2 modify-volume --no-dry-run --volume-id vol-090f3d2086a1a2f36 --size 4000 --volume-type io1 --iops 12000 
+
+aws ec2 modify-volume --no-dry-run --volume-id vol-0230b8f73ee2cbadc --size 4000 --volume-type gp2
+aws ec2 modify-volume --no-dry-run --volume-id vol-077bdc47973b49cf1 --size 4000 --volume-type gp2
+aws ec2 modify-volume --no-dry-run --volume-id vol-0512dda749e855ad4 --size 4000 --volume-type gp2
+aws ec2 modify-volume --no-dry-run --volume-id vol-090f3d2086a1a2f36 --size 4000 --volume-type gp2
+
+
+
+---sem dados
+aws ec2 describe-volumes --region sa-east-1 --filters Name=attachment.instance-id,Values=i-07d89202073202e8b Name=size,Values=4000 --query 'Volumes[*].{ID:VolumeId,Tag:Tags}'
+
+aws ec2 modify-volume --dry-run --volume-id vol-04881aea0897cdf31 --size 4000 --volume-type io1 --iops 12000
+aws ec2 modify-volume --dry-run --volume-id vol-04b7ebcefc2cfded2 --size 4000 --volume-type io1 --iops 12000
+aws ec2 modify-volume --dry-run --volume-id vol-093a1480a4e50cc73 --size 4000 --volume-type io1 --iops 12000
+aws ec2 modify-volume --dry-run --volume-id vol-063c7b953ef86ff14 --size 4000 --volume-type io1 --iops 12000
+
+aws ec2 modify-volume --no-dry-run --volume-id vol-04881aea0897cdf31 --size 4000 --volume-type io1 --iops 12000
+aws ec2 modify-volume --no-dry-run --volume-id vol-04b7ebcefc2cfded2 --size 4000 --volume-type io1 --iops 12000
+aws ec2 modify-volume --no-dry-run --volume-id vol-093a1480a4e50cc73 --size 4000 --volume-type io1 --iops 12000
+aws ec2 modify-volume --no-dry-run --volume-id vol-063c7b953ef86ff14 --size 4000 --volume-type io1 --iops 12000
+
+aws ec2 modify-volume --no-dry-run --volume-id vol-04881aea0897cdf31 --size 4000 --volume-type gp2
+aws ec2 modify-volume --no-dry-run --volume-id vol-04b7ebcefc2cfded2 --size 4000 --volume-type gp2
+aws ec2 modify-volume --no-dry-run --volume-id vol-093a1480a4e50cc73 --size 4000 --volume-type gp2
+aws ec2 modify-volume --no-dry-run --volume-id vol-063c7b953ef86ff14 --size 4000 --volume-type gp2
+
+
+Just to close the subject regarding the usage of gp2 discs, I spun up 2 engines, 1 for IO Storage reports and other to use repliction between LabAlchemy and the engine. The IOReport with gp2 discs follow: 
+
+```ip-172-31-2-121 storage test '`STORAGE_TEST-1' result *> commit
+Test Results
+------------
+Test ID:              1
+Test System UUID:     8dcd2cec-7c35-28a4-4680-ff0bfcdfacdd
+Test System Hostname: ip-172-31-2-121
+Test System IP(s):    [172.31.2.121]
+Storage Devices:      [/dev/sde, /dev/sdd, /dev/sdb, /dev/sdc]
+Start Time:           19-Oct-2018 10:08:53 -0700
+End Time:             19-Oct-2018 12:53:40 -0700
+
+Test Grades:
+
+Test Name                                     Latency            Load Scaling
+-------------------------------     --------------------------  ---------------
+                                    Average  95th %ile   Grade  Scaling   Grade
+                                    -------  ---------   -----  -------   -----
+Random 8K Reads w/ 16 jobs             1.22       1.99     A+      0.79    poor
+Random 4K Reads w/ 16 jobs             1.05       1.96     A+      0.74    poor
+Sequential 1M Reads w/ 4 jobs         39.32      39.68     D       1.24     bad
+Sequential 1K Writes w/ 4 jobs         0.51       0.60     A       0.23    good
+Sequential 128K Writes w/ 4 jobs       4.92       5.09     A-      1.56     bad```
+
+and then I switched the discs to io1 using following command: 
+
+`aws ec2 modify-volume --no-dry-run --volume-id vol-xxxxxxxxxxxx --size 4000 --volume-type io1 --iops 12000`
+
+the second io_report with io1 discs follow:
+
+```ip-172-31-2-121 storage test '`STORAGE_TEST-2' result *> commit
+Test Results
+------------
+Test ID:              2
+Test System UUID:     8dcd2cec-7c35-28a4-4680-ff0bfcdfacdd
+Test System Hostname: ip-172-31-2-121
+Test System IP(s):    [172.31.2.121]
+Storage Devices:      [/dev/sdc, /dev/sdb, /dev/sdd, /dev/sde]
+Start Time:           19-Oct-2018 13:29:00 -0700
+End Time:             19-Oct-2018 16:13:50 -0700
+
+Test Grades:
+
+Test Name                                     Latency            Load Scaling
+-------------------------------     --------------------------  ---------------
+                                    Average  95th %ile   Grade  Scaling   Grade
+                                    -------  ---------   -----  -------   -----
+Random 8K Reads w/ 16 jobs             1.22       2.16     A       0.65    poor
+Random 4K Reads w/ 16 jobs             1.07       1.98     A+      0.82    poor
+Sequential 1M Reads w/ 4 jobs         39.32      39.68     D       1.22     bad
+Sequential 1K Writes w/ 4 jobs         0.52       0.63     A       0.18    good
+Sequential 128K Writes w/ 4 jobs       4.92       5.09     A-      1.47     bad```
+
+and then I switched the discs to io1 using following command:
+
+`aws ec2 modify-volume --no-dry-run --volume-id vol-04881aea0897cdf31 --size 4000 --volume-type gp2`
+
+The engine for replication worked nicely. I switched the discs from gp2 to io1 (engine Stopped) and from io1 to gp2 (engine Running), both actions after the replication (from LabAlchemy engine) completed.
+
+I would say that we should support EBS on gp2 if big enough to have high level of IOPS (more than 3,334GiB by `https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSVolumeTypes.html`)
+
+Estimated cost just for the volumes for this scenario per month: *USD3,040* gp2 vs *USD8,176* io1
+
+3808 provisioned GB
+4368 provisioned IOPS
+
+8176 io1
+

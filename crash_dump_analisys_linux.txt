@@ -1,0 +1,15 @@
+crash /usr/lib/debug/lib/modules/kernel/vmlinux /var/crash/vmcore
+
+gdb
+
+mount (see FS mounted)
+files (see open file descriptors)
+ps (process was running)
+mount -f (files
+bt (crash stack)
+net (ifs)
+net -a (routes)
+
+
+
+http://people.redhat.com/anderson/crash_whitepaper/

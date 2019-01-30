@@ -1,0 +1,4 @@
+dx_provision_vdb.py --source_grp Sources --source "dsource" --instname devdb --uniqname devdb --db devdb --target devdb --target_grp "Development" --environment LINUXTARGET --type oracle --envinst "$ORACLE_HOME"
+./dx_provision_vdb.py --source_grp Sources --source "Employee Oracle 11G DB" --target_grp "QA Copies" --target QADB --type oracle --instname QADB --uniqname QADB --db QADB --environment LINUXTARGET --envinst "/u01/app/oracle/product/11.2.0/dbhome_1"
+
+./dx_provision_vdb.py --source_grp Sources --source "Employee Web Application" --target_grp "QA Copies" --target "QA App" --type vfiles --vfiles_path "/u02/app/apache-tomcat-7.0.42_qaapp" --mntpoint "/u02/app/apache-tomcat-7.0.42_qaapp" --environment LINUXTARGET --envinst "webapp" --debug

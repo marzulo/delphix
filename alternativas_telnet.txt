@@ -10,4 +10,4 @@ s.close()
 
 if you receive a Connection refused that means closed port!
 
-curl -v telnet://tim5230.dcenter.delphix.com:22
+curl -v telnet://tim5230.dcenter.delphix.com:22Iddqd#21
