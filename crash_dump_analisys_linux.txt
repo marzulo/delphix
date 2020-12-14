@@ -16,3 +16,10 @@ http://people.redhat.com/anderson/crash_whitepaper/
 
 nfsiostat to evaluate NFS IO commands...
 
+https://www.thegeekstuff.com/2011/07/iostat-vmstat-mpstat-examples/
+
+iostat reports CPU, disk I/O, and NFS statistics.
+vmstat reports virtual memory statistics.
+mpstat reports processors statictics.
+
+jprobe... jconsole... jstack...
