@@ -1,0 +1,29 @@
+
+db.myCollection.insertOne( { Name: "Andre Marzulo", Cpf: 27397032877 } );
+
+db.myCollection.insertMany(
+   [
+      { "_id" : 1, Name : "Andre Marzulo", Cpf : NumberLong(27397032877) },
+      { "_id" : 2, Name: "Monique Marzulo", Cpf : NumberLong(02981644939) },
+      { "_id" : 3, Name : "Gabriel Marzulo", Cpf: NumberLong(12345678900) },
+      { "_id" : 4, Name : "Alice Marzulo" , Cpf : NumberLong(00987654321) }
+   ]
+)
+
+db.getCollection("myCollection").find().pretty();
+
+
+mongoexport --db delphix --collection myCollection --out myCollection.csv --type csv --fieldFile mycollectionfields.txt
+[delphix@linuxtarget ~]$ cat mycollectionfields.txt 
+_id
+Name
+Cpf
+
+cp myCollection.csv newCollection.csv
+
+mongoimport --db delphix --collection myCollection --type csv --columnsHaveTypes --mode merge --fields "_id.int32(),Name.string(),Cpf.int64()" --file newCollection.csv
+
+
+
+
+
